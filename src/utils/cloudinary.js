@@ -2,9 +2,9 @@ import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
 
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name:"dsnj5pq5p",
+  api_key:"486741517721365",
+  api_secret:"BIP76-fwedgWnEn14Tws83drbrA",
 });
 
 const cloudinaryUpload = async(filePath)=>{
@@ -14,10 +14,9 @@ const cloudinaryUpload = async(filePath)=>{
                 resource_type:"auto"
             }
         );
-        console.log("Image uploaded to ",response.secure_url);
         return response;
     } catch (error) {
-        fs.unwatchFile(filePath);
+        fs.unlinkSync(filePath);
         return null;
     }
 }
