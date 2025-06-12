@@ -60,7 +60,7 @@ userSchema.pre("save",async function(next) {
 })
 
 userSchema.methods.comparePassword = async function(password){
-     return await hash.comparePassword(password,this.password);
+     return await bcrypt.compare(password,this.password);
 }
 
 userSchema.methods.generate_JWT_Token = function()
