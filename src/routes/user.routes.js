@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { registerUser,loginUser, logoutUser,updateRefreshToken } from "../controllers/user.controllers.js";
+import { registerUser,loginUser, logoutUser,updateRefreshToken,updatePassword,getCurrentUser,updateUserDetails} from "../controllers/user.controllers.js";
 import {upload} from "../middlewares/multer.middleware.js";
 import { body } from "express-validator";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { name } from "ejs";
 const router = Router();
 
 router.route("/register").post(
@@ -24,5 +25,13 @@ router.route("/login").post(
 
 router.route("/logout").post(verifyJWT,logoutUser)
 router.route("/refresh-token").post(updateRefreshToken);
+router.route("/updatePassword").post(verifyJWT,updatePassword);
+router.route("/getCurrentUser").post(verifyJWT,getCurrentUser);
+router.route("/updateUserDetails").post(verifyJWT,
+     upload.fields([
+        {name:"avatar",maxCount:1},
+        {name:"coverImage",maxCount:1}
+     ]),
+     updateUserDetails)
 
 export default router

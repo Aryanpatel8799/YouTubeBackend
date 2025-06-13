@@ -2,7 +2,7 @@ import multer from "multer";
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-      cb(null,"C:/Users/Aryan/Desktop/YouTubeBackend/public/temp")
+      cb(null,"C:/Users/Aryan/OneDrive/Desktop/YouTubeBackend/public/temp")
     },
     filename: function (req, file, cb) {
       

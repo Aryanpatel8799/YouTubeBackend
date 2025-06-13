@@ -68,9 +68,6 @@ userSchema.methods.generate_JWT_Token = function()
     return jwt.sign(
         {
             _id:this._id,
-            userName:this.userName,
-            email:this.email,
-            fullName:this.fullName
         },
         process.env.JWT_SECRET_KEY,
         {
@@ -83,9 +80,6 @@ userSchema.methods.generate_Refresh_Token = function()
     return jwt.sign( 
         {
             _id:this._id,
-            userName:this.userName,
-            email:this.email,
-            fullName:this.fullName
         },
         process.env.REFRESH_SECRET_KEY,
         {
