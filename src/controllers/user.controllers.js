@@ -8,7 +8,7 @@ import { validationResult } from "express-validator";
 import fs from "fs";
 import JWT from "jsonwebtoken";
 import { console } from "inspector";
-
+import mongoose from "mongoose";
 const generateRefreshAndAccessToken = async (userId) => {
   try {
     const userExists = await userModel.findById(userId);
@@ -311,61 +311,81 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 const updateUserDetails = asyncHandler(async (req, res) => {
   try {
     let { fullName, email } = req.body;
-    const updatedFullName = fullName?fullName:req.user?.fullName;
-    const updatedEmail = email?email:req.user?.email;
+    const updatedFullName = fullName ? fullName : req.user?.fullName;
+    const updatedEmail = email ? email : req.user?.email;
     let avatarfilepath;
     let coverImagefilepath;
 
-    if (!fullName && !email && !(req.files && req.files.avatar && req.files.avatar[0].path) && !(req.files && req.files.coverImage && req.files.coverImage[0].path)) {
+    if (
+      !fullName &&
+      !email &&
+      !(req.files && req.files.avatar && req.files.avatar[0].path) &&
+      !(req.files && req.files.coverImage && req.files.coverImage[0].path)
+    ) {
       throw new ApiError(400, [], "No details provided to update");
     }
-    
-    if(req.files && req.files.avatar && req.files.avatar[0].path)
-    {
-        try {
-            avatarfilepath = req.files.avatar[0].path
-            const avatarURL = await cloudinaryUpload(avatarfilepath);
-            const user = await userModel.findByIdAndUpdate(
-                req.user._id,
-                {
-                    $set:{avatar:avatarURL.secure_url},
-                    validateBeforeSave:false
-                }
-            )
-            fs.unlinkSync(avatarfilepath);
-        } catch (error) {
-            fs.unlinkSync(avatarfilepath);
-            throw new ApiError(400,error,"Error in updating avatar")
-        }
+
+    if (req.files && req.files.avatar && req.files.avatar[0].path) {
+      try {
+        avatarfilepath = req.files.avatar[0].path;
+        const avatarURL = await cloudinaryUpload(avatarfilepath);
+        const user = await userModel.findByIdAndUpdate(
+          req.user._id,
+          {
+            $set: { avatar: avatarURL.secure_url },
+          },
+          {
+            validateBeforeSave: false,
+          },
+          {
+            new: true,
+          }
+        );
+        fs.unlinkSync(avatarfilepath);
+      } catch (error) {
+        fs.unlinkSync(avatarfilepath);
+        throw new ApiError(400, error, "Error in updating avatar");
+      }
     }
-    if(req.files && req.files.coverImage && req.files.coverImage[0].path)
-    {
-        try {
-            coverImagefilepath = req.files.coverImage[0].path
-            const coverImageUrl = await cloudinaryUpload(coverImagefilepath);
-            const user = await userModel.findByIdAndUpdate(
-                req.user._id,
-                {
-                  $set:{coverImage:coverImageUrl.secure_url},
-                  validateBeforeSave:false
-                }
-            )
-            fs.unlinkSync(coverImagefilepath);
-        } catch (error) {
-            fs.unlinkSync(coverImagefilepath);
-            throw new ApiError(400,error,"Error in updating cover image")
-        }
-    }    
+    if (req.files && req.files.coverImage && req.files.coverImage[0].path) {
+      try {
+        coverImagefilepath = req.files.coverImage[0].path;
+        const coverImageUrl = await cloudinaryUpload(coverImagefilepath);
+        const user = await userModel.findByIdAndUpdate(
+          req.user._id,
+          {
+            $set: { coverImage: coverImageUrl.secure_url },
+          },
+          {
+            validateBeforeSave: false,
+          },
+          {
+            new: true,
+          }
+        );
+        fs.unlinkSync(coverImagefilepath);
+      } catch (error) {
+        fs.unlinkSync(coverImagefilepath);
+        throw new ApiError(400, error, "Error in updating cover image");
+      }
+    }
 
     const updatedUser = await userModel
-      .findByIdAndUpdate(req.user._id, {
-        $set: { fullName: updatedFullName, email: updatedEmail },
-        validateBeforeSave:false
-      })
+      .findByIdAndUpdate(
+        req.user._id,
+        {
+          $set: { fullName: updatedFullName, email: updatedEmail },
+        },
+        {
+          validateBeforeSave: false,
+        },
+        {
+          new: true,
+        }
+      )
       .select("-password -refreshToken");
-    
-    
 
+    console.log(req.user);
     return res
       .status(200)
       .json(
@@ -376,6 +396,135 @@ const updateUserDetails = asyncHandler(async (req, res) => {
   }
 });
 
+const getChannelDetails = asyncHandler(async (req, res) => {
+  console.log("params : ", req.params);
+  const userName = req.params;
+  console.log(userName);
+
+  if (!userName) {
+    throw new ApiError(400, [], "Username cannot be empty");
+  }
+
+  const channelDetail = await userModel.aggregate([
+    {
+      $match: {
+        userName:userName 
+      },
+    },
+    {
+      $lookup: {
+        from: "subscribers",
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "subscriberCount",
+      },
+    },
+    {
+      $lookup: {
+        from: "subscribers",
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscribedToCount",
+      },
+    },
+    {
+      $addFields: {
+        subscriberCount: {
+          $size: "$subscriberCount",
+        },
+        subscribedToCount: {
+          $size: "$subscribedToCount",
+        },
+        isSubscribed: {
+          $cond: {
+            if: { $in: [req.user?._id, "$subscriberCount.subscriber"] },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        fullName: 1,
+        userName: 1,
+        subscriberCount: 1,
+        subscribedToCount: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverImage: 1,
+      },
+    },
+  ]);
+
+  if (!channelDetail?.length) {
+    throw new ApiError(404, [], "User not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "User found successfully", channelDetail[0]));
+});
+
+const getWatchHistory = asyncHandler(async (req, res) => { 
+  
+  // the concept which we have applied here is :
+  //step 1: Find the document of the user by its id
+  //step 2: then find for the videos which will be there in users watch history
+  //step 3: then we will lookup for the video owner details who owns the video
+  //step 4: then we will not display all the details we will only return fullname,username and avatar
+  //step 5: then we will return the whole data properly so it can be easily displayed by the frontend
+  //        developer
+  const user = await userModel.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user._id),
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [{
+                $project:{
+                  userName:1,
+                  fullName:1,
+                  avatar:1
+                }
+              }],
+            },
+          },
+          {
+            $addFields:{
+              owner:{
+                $first:"$owner"
+              }
+            }
+          }
+        ],
+      },
+    },
+  ]);
+
+  if(!user?.length)
+  {
+    throw new ApiError(404,[],"Watch history is empty")
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200,"Watch history fetched successfully",user[0].watchHistory)
+  )
+});
+
 export {
   registerUser,
   loginUser,
@@ -384,4 +533,6 @@ export {
   updatePassword,
   getCurrentUser,
   updateUserDetails,
+  getChannelDetails,
+  getWatchHistory,
 };
