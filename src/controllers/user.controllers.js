@@ -398,7 +398,7 @@ const updateUserDetails = asyncHandler(async (req, res) => {
 
 const getChannelDetails = asyncHandler(async (req, res) => {
   console.log("params : ", req.params);
-  const userName = req.params;
+  const {userName} = req.params;
   console.log(userName);
 
   if (!userName) {

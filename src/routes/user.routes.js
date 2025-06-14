@@ -27,13 +27,13 @@ router.route("/logout").post(verifyJWT,logoutUser)
 router.route("/refresh-token").post(updateRefreshToken);
 router.route("/updatePassword").post(verifyJWT,updatePassword);
 router.route("/getCurrentUser").post(verifyJWT,getCurrentUser);
-router.route("/updateUserDetails").post(verifyJWT,
+router.route("/updateUserDetails").patch(verifyJWT,
      upload.fields([
         {name:"avatar",maxCount:1},
         {name:"coverImage",maxCount:1}
      ]),
 updateUserDetails)
-router.route("/getChannelDetails").post(verifyJWT,getChannelDetails)
+router.route("/getChannelDetails/:userName").get(verifyJWT,getChannelDetails)
 router.route("/getWatchHistory").post(verifyJWT,getWatchHistory)
 
 export default router
