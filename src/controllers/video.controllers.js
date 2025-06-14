@@ -7,6 +7,7 @@ import uploadVideo from "../services/video.services.js";
 import fs from "fs"
 import videoModel from "../models/video.models.js";
 import userModel from "../models/user.models.js";
+import mongoose from "mongoose";
 
 
 const publishVideo = asyncHandler(async(req,res)=>
@@ -111,6 +112,86 @@ const getAllVideo = asyncHandler(async(req,res)=>{
       throw new apiError(400,[],"Error in fetching video")
    }
 })
+''
+const getAllDetailsOfVideo = asyncHandler(async(req,res)=>{
 
+   try {
+     const {videoId} = req.params
+ 
+     if(!videoId)
+     {
+        throw new apiError(400,[],"Video Id is required")
+     }
+ 
+     const VideoDetails = await videoModel.aggregate([
+         {
+             $match:{
+                 _id: new mongoose.Types.ObjectId(videoId)
+             }
+         },
+         {
+            $lookup:{
+                from:"users",
+                localField:"owner",
+                foreignField:"_id",
+                as:"VideoOwnerDetails"
+            },
+         },
+         {
+            $lookup:{
+                from:"likes",
+                localField:"_id",
+                foreignField:"video",
+                as:"likesOnVideo"
+            }
+         },
+         {
+            $lookup:{
+                from:"comments",
+                localField:"_id",
+                foreignField:"video",
+                as:"commentsOnVideo"
+            }
+         },
+         {
+            $addFields:{
+                likesCount:{
+                    $size:"$likesOnVideo"
+                },
+                commentCount:{
+                    $size:"$commentsOnVideo"
+                },
+                VideoOwnerDetails:{
+                    $first:"$VideoOwnerDetails"
+                }   
+            }
+         },
+         {
+            $project:{
+                VideoOwnerDetails:1,
+                title:1,
+                description:1,
+                thumbnailUrl:1,
+                videoUrl:1,
+                duration:1,
+                likesCount:1,
+                commentCount:1,
+                commentsOnVideo:1
+            }
+         }
+     ])
 
-export {publishVideo,removeVideo,getAllVideo}
+     if(!VideoDetails?.length)
+     {
+        throw new apiError(404,[],"Not found with such video Id")
+     }
+
+     return res.status(200).json(
+        new ApiResponse(200,"Video details fetched successfully",VideoDetails[0])
+     )
+   } catch (error) {
+      throw new apiError(400,[],`error: ${error}`)
+   }
+})
+
+export {publishVideo,removeVideo,getAllVideo,getAllDetailsOfVideo}
