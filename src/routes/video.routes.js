@@ -2,7 +2,7 @@ import { Router } from "express";
 import {upload} from "../middlewares/multer.middleware.js";
 import { body } from "express-validator";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import {publishVideo} from "../controllers/video.controllers.js"
+import {publishVideo,removeVideo,getAllVideo} from "../controllers/video.controllers.js"
 const router = Router();
 
 router.route("/uploadVideo").post(verifyJWT,
@@ -23,5 +23,8 @@ router.route("/uploadVideo").post(verifyJWT,
 ]
 )
 ,publishVideo)
+router.route("/removeVideo/:videoId").delete(verifyJWT,removeVideo)
+router.route("/getAllVideo").get(verifyJWT,getAllVideo);
+
 
 export default router

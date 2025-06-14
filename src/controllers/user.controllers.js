@@ -2,6 +2,7 @@ import asyncHandler from "./../utils/asyncHandler.js";
 import ApiError from "../utils/ApiErrors.js";
 import cloudinaryUpload from "../utils/cloudinary.js";
 import userModel from "../models/user.models.js";
+import videoModel from "../models/video.models.js";
 import { createUser } from "../services/user.services.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import { validationResult } from "express-validator";
@@ -9,6 +10,7 @@ import fs from "fs";
 import JWT from "jsonwebtoken";
 import { console } from "inspector";
 import mongoose from "mongoose";
+import apiError from "../utils/ApiErrors.js";
 const generateRefreshAndAccessToken = async (userId) => {
   try {
     const userExists = await userModel.findById(userId);
@@ -416,7 +418,7 @@ const getChannelDetails = asyncHandler(async (req, res) => {
         from: "subscribers",
         localField: "_id",
         foreignField: "subscriber",
-        as: "subscriberCount",
+        as: "subscribedToCount",
       },
     },
     {
@@ -424,7 +426,7 @@ const getChannelDetails = asyncHandler(async (req, res) => {
         from: "subscribers",
         localField: "_id",
         foreignField: "channel",
-        as: "subscribedToCount",
+        as: "subscriberCount",
       },
     },
     {
@@ -529,7 +531,11 @@ const addVideoToHistory = asyncHandler(async (req,res)=>{
 
    try {
     const { videoId } = req.params;
- 
+    const isVideoExist = await videoModel.findById({_id:videoId})
+    if(!isVideoExist)
+    {
+      throw new apiError(404,[],"Video Does not exists with this video Id")
+    }
     const user = await userModel.findById(req.user._id).select("-password -refreshToken");
     if(!user.watchHistory.includes(videoId))
     {
