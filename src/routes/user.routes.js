@@ -1,9 +1,8 @@
 import { Router } from "express";
-import { registerUser,loginUser,logoutUser,updateRefreshToken,updatePassword,getCurrentUser,updateUserDetails,getChannelDetails,getWatchHistory} from "../controllers/user.controllers.js";
+import { registerUser,loginUser,logoutUser,updateRefreshToken,updatePassword,getCurrentUser,updateUserDetails,getChannelDetails,getWatchHistory,addVideoToHistory} from "../controllers/user.controllers.js";
 import {upload} from "../middlewares/multer.middleware.js";
 import { body } from "express-validator";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { name } from "ejs";
 const router = Router();
 
 router.route("/register").post(
@@ -35,5 +34,6 @@ router.route("/updateUserDetails").patch(verifyJWT,
 updateUserDetails)
 router.route("/getChannelDetails/:userName").get(verifyJWT,getChannelDetails)
 router.route("/getWatchHistory").post(verifyJWT,getWatchHistory)
+router.route("/addVideoToHistory/:videoId").get(verifyJWT,addVideoToHistory)
 
 export default router

@@ -6,6 +6,7 @@ import cors from "cors";
 import userRoutes from "./routes/user.routes.js";
 import { Router } from "express";
 import cookieParser from "cookie-parser";
+import videoRouter from "./routes/video.routes.js"
 
 const app=express();
 
@@ -21,5 +22,6 @@ connectToDB();
 //Routes
 
 app.use("/api/v1/users",userRoutes);
+app.use("/api/v1/videos",videoRouter)
 
 export default app

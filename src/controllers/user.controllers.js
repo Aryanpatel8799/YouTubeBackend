@@ -525,6 +525,27 @@ const getWatchHistory = asyncHandler(async (req, res) => {
   )
 });
 
+const addVideoToHistory = asyncHandler(async (req,res)=>{
+
+   try {
+    const { videoId } = req.params;
+ 
+    const user = await userModel.findById(req.user._id).select("-password -refreshToken");
+    if(!user.watchHistory.includes(videoId))
+    {
+    user.watchHistory.push(videoId);
+    await user.save({validateBeforeSave:false})
+    }
+    return res.status(200).json(
+      new ApiResponse(200,"video added succesfully to watch history",user)
+    )
+   } catch (error) {
+      throw new ApiError(400,[],error)
+
+   }
+   
+})
+
 export {
   registerUser,
   loginUser,
@@ -535,4 +556,5 @@ export {
   updateUserDetails,
   getChannelDetails,
   getWatchHistory,
+  addVideoToHistory
 };
